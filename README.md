@@ -50,4 +50,15 @@ Bot written in Python to crawl a given onionsite for any .onion address and qury
 # Run The Script!
 
     python crawler.py
+
+
+
+# Docker Install Instructions
+
+    git clone https://github.com/BrianTheMint/tor_scraper.git
+    cd tor_scraper
+    docker-compose up -d
+
+# Dockerfile is included
+  
         
