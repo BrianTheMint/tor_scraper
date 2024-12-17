@@ -11,13 +11,18 @@ REQUIREMENTS_URL="https://raw.githubusercontent.com/BrianTheMint/tor_scraper/ref
 
 # Detect the user's home directory
 HOME_DIR=$(eval echo "~$USER")
+BASE_DIR="$HOME_DIR/tor_scraper"
 
 # Destination paths
 TORRC_DEST="/etc/tor/torrc"
 PRIVOXY_CONFIG_DEST="/etc/privoxy/config"
-CRAWLER_DEST="$HOME_DIR/crawler.py"
-REQUIREMENTS_DEST="$HOME_DIR/requirements.txt"
-VENV_DIR="$HOME_DIR/venv"
+CRAWLER_DEST="$BASE_DIR/crawler.py"
+REQUIREMENTS_DEST="$BASE_DIR/requirements.txt"
+VENV_DIR="$BASE_DIR/venv"
+
+# Create the base directory
+echo "Creating base directory at $BASE_DIR..."
+mkdir -p "$BASE_DIR"
 
 echo "Updating package list and upgrading system..."
 sudo apt-get update -y && sudo apt-get upgrade -y
@@ -60,4 +65,5 @@ echo "Restarting Tor and Privoxy services..."
 sudo systemctl restart tor
 sudo systemctl restart privoxy
 
+echo "All files have been placed in $BASE_DIR"
 echo "Installation, configuration, and virtual environment setup complete."
