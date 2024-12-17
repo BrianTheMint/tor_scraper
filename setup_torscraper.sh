@@ -59,6 +59,7 @@ echo "Activating virtual environment and installing requirements..."
 source "$VENV_DIR/bin/activate"
 pip install --no-cache-dir -r "$REQUIREMENTS_DEST"
 deactivate
+sudo chmod -R +x venv/
 
 # Restart services to apply changes
 echo "Restarting Tor and Privoxy services..."
