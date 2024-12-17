@@ -23,7 +23,7 @@ session.proxies = {
     'https': PRIVOXY_PROXY,
 }
 
-# Configure retries (fix the method_whitelist to allowed_methods)
+# Configure retries (fix allowed_methods)
 retry_strategy = Retry(
     total=5,  # Retry up to 5 times
     backoff_factor=1,  # Exponential backoff factor
@@ -47,13 +47,13 @@ def renew_tor_ip():
 def scrape_onion(url, depth, max_depth, visited, writer):
     if depth > max_depth:
         return  # Stop recursion if max depth is reached
-    
+
     # Avoid revisiting the same URL
     if url in visited:
         return
-    
+
     visited.add(url)  # Mark this URL as visited
-    
+
     try:
         response = session.get(url, timeout=30)  # Increased timeout to 30 seconds
         if response.status_code == 200:
@@ -61,10 +61,10 @@ def scrape_onion(url, depth, max_depth, visited, writer):
             title = soup.title.string if soup.title else "No title"
             logging.info(f"Depth {depth} - URL: {url} - Title: {title}")
             print(f"Scraped: Depth {depth} - {url} - Title: {title}")
-            
+
             # Write the .onion URL and title to the CSV file
             writer.writerow([url, title])
-            
+
             # Extract and follow links on this page
             links = soup.find_all('a', href=True)
             for link in links:
@@ -81,16 +81,15 @@ def scrape_onion(url, depth, max_depth, visited, writer):
 # Main function to read .onion addresses and scrape
 def main():
     # Define max depth and .onion URLs directly in the script
-    max_depth = 6  # Set the desired max depth here
+    max_depth = 3  # Set the desired max depth here
     onion_addresses = [
-        "http://3mcm3cathoi5eahjeq7e5tgessfktszioxyf4rnx2ug7ab3ilzvgwfyd.onion/",  # Replace with actual .onion URLs
+        "http://bhlnasxdkbaoxf4gtpbhavref7l2j3bwooes77hqcacxztkindztzrad.onion/",
         "http://t3g5mz7kgivhgzua64vxmu7ieyyoyzgd423itqjortjhh64lcvspyayd.onion/",
         "http://dreadytofatroptsdj6io7l3xptbet6onoyno2yv7jicoxknyazubrad.onion",
-        "http://bhlnasxdkbaoxf4gtpbhavref7l2j3bwooes77hqcacxztkindztzrad.onion/",
-        "bhlnasxdkbaoxf4gtpbhavref7l2j3bwooes77hqcacxztkindztzrad.onion",
+        "http://3mcm3cathoi5eahjeq7e5tgessfktszioxyf4rnx2ug7ab3ilzvgwfyd.onion/",
         "http://lp2fkbyfmiefvscyawqvssyh7rnwfjsifdhebp5me5xizte3s47yusqd.onion",
     ]
-    
+
     visited = set()  # To track visited URLs
 
     # Open CSV file for writing the results
@@ -101,7 +100,7 @@ def main():
 
         for address in onion_addresses:
             scrape_onion(address, 1, max_depth, visited, writer)
-            
+
             # Optionally, renew the Tor IP after each request to avoid being tracked
             renew_tor_ip()
 
