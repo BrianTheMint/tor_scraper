@@ -85,7 +85,7 @@ def main():
     onion_addresses = [
         "http://3mcm3cathoi5eahjeq7e5tgessfktszioxyf4rnx2ug7ab3ilzvgwfyd.onion/",  # Replace with actual .onion URLs
         "http://t3g5mz7kgivhgzua64vxmu7ieyyoyzgd423itqjortjhh64lcvspyayd.onion/",
-        "http://dreadytofatroptsdj6io7l3xptbet6onoyno2yv7jicoxknyazubrad.onion/search/?p=4&q=gore&fuzziness=auto",
+        "http://dreadytofatroptsdj6io7l3xptbet6onoyno2yv7jicoxknyazubrad.onion",
         "http://bhlnasxdkbaoxf4gtpbhavref7l2j3bwooes77hqcacxztkindztzrad.onion/",
         "bhlnasxdkbaoxf4gtpbhavref7l2j3bwooes77hqcacxztkindztzrad.onion",
         "http://lp2fkbyfmiefvscyawqvssyh7rnwfjsifdhebp5me5xizte3s47yusqd.onion",
