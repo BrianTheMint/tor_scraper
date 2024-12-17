@@ -1,5 +1,5 @@
-# tor_scraper | Tested on Ubuntu 24.04 with python 3.12.3
-bot based on python to scrape for .onion addresses 
+# Tor Scraper | Tested on Ubuntu 24.04 with python 3.12.3
+Bot written in Python to crawl a given onionsite for any .onion address and qurys them for a title, outputting to a text file
   install dependancies
     sudo apt-get update && sudo apt-get install python3 python3-venv python3-pip privoxy nyx -y
 
