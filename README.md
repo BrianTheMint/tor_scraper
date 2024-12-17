@@ -27,6 +27,10 @@ Bot written in Python to crawl a given onionsite for any .onion address and qury
     sudo service restart tor
     sudo service restart privoxy
 
+# Use Nyx to Make Sure Tor is Running Correctly
+
+    sudo nyx
+    Ctrl+C to escape
 # Create and Enter venv
     
     python -m venv venv
