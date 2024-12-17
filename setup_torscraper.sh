@@ -9,8 +9,7 @@ PRIVOXY_CONFIG_URL="https://raw.githubusercontent.com/BrianTheMint/tor_scraper/r
 CRAWLER_SCRIPT_URL="https://raw.githubusercontent.com/BrianTheMint/tor_scraper/refs/heads/main/crawler.py"
 REQUIREMENTS_URL="https://raw.githubusercontent.com/BrianTheMint/tor_scraper/refs/heads/main/requirements.txt"
 
-# Detect the user's home directory
-HOME_DIR=$(eval echo "~$USER")
+# Base directory for the setup
 BASE_DIR="/tor_scraper"
 
 # Destination paths
@@ -22,7 +21,8 @@ VENV_DIR="$BASE_DIR/venv"
 
 # Create the base directory
 echo "Creating base directory at $BASE_DIR..."
-mkdir -p "$BASE_DIR"
+sudo mkdir -p "$BASE_DIR"
+sudo chown $USER:$USER "$BASE_DIR"
 
 echo "Updating package list and upgrading system..."
 sudo apt-get update -y && sudo apt-get upgrade -y
@@ -59,12 +59,11 @@ echo "Activating virtual environment and installing requirements..."
 source "$VENV_DIR/bin/activate"
 pip install --no-cache-dir -r "$REQUIREMENTS_DEST"
 deactivate
-sudo chmod -R +x venv/
 
 # Restart services to apply changes
 echo "Restarting Tor and Privoxy services..."
 sudo systemctl restart tor
 sudo systemctl restart privoxy
 
-echo "All files have been placed in $BASE_DIR"
 echo "Installation, configuration, and virtual environment setup complete."
+echo "All files are located in $BASE_DIR."
