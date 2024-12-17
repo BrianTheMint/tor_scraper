@@ -59,7 +59,7 @@ echo "Activating virtual environment and installing requirements..."
 source "$VENV_DIR/bin/activate"
 pip install --no-cache-dir -r "$REQUIREMENTS_DEST"
 deactivate
-chmod -R 777 /tor_scraper
+sudo chmod -R 777 /tor_scraper
 
 # Restart services to apply changes
 echo "Restarting Tor and Privoxy services..."
