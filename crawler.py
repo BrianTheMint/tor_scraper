@@ -7,6 +7,7 @@ import logging
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from urllib.parse import urljoin
+import csv
 
 # Set up logging
 logging.basicConfig(filename="scraper_log.txt", level=logging.INFO, format="%(asctime)s - %(message)s")
@@ -43,7 +44,7 @@ def renew_tor_ip():
         time.sleep(5)  # Wait for the new IP to be assigned
 
 # Function to scrape .onion address for the title
-def scrape_onion(url, depth, max_depth, visited):
+def scrape_onion(url, depth, max_depth, visited, writer):
     if depth > max_depth:
         return  # Stop recursion if max depth is reached
     
@@ -61,12 +62,15 @@ def scrape_onion(url, depth, max_depth, visited):
             logging.info(f"Depth {depth} - URL: {url} - Title: {title}")
             print(f"Scraped: Depth {depth} - {url} - Title: {title}")
             
+            # Write the .onion URL and title to the CSV file
+            writer.writerow([url, title])
+            
             # Extract and follow links on this page
             links = soup.find_all('a', href=True)
             for link in links:
                 next_url = urljoin(url, link['href'])  # Resolve relative URLs
                 if next_url.startswith('http'):
-                    scrape_onion(next_url, depth + 1, max_depth, visited)
+                    scrape_onion(next_url, depth + 1, max_depth, visited, writer)
         else:
             logging.warning(f"Failed to access {url}, Status Code: {response.status_code}")
             print(f"Failed to access {url}, Status Code: {response.status_code}")
@@ -85,12 +89,18 @@ def main():
     ]
     
     visited = set()  # To track visited URLs
-    
-    for address in onion_addresses:
-        scrape_onion(address, 1, max_depth, visited)
-        
-        # Optionally, renew the Tor IP after each request to avoid being tracked
-        renew_tor_ip()
+
+    # Open CSV file for writing the results
+    with open('scraped_onions.csv', mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        # Write the header row in CSV
+        writer.writerow(['.onion URL', 'Page Title'])
+
+        for address in onion_addresses:
+            scrape_onion(address, 1, max_depth, visited, writer)
+            
+            # Optionally, renew the Tor IP after each request to avoid being tracked
+            renew_tor_ip()
 
 if __name__ == "__main__":
     main()
