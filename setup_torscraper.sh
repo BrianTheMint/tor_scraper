@@ -11,7 +11,7 @@ REQUIREMENTS_URL="https://raw.githubusercontent.com/BrianTheMint/tor_scraper/ref
 
 # Detect the user's home directory
 HOME_DIR=$(eval echo "~$USER")
-BASE_DIR="$HOME_DIR/tor_scraper"
+BASE_DIR="/tor_scraper"
 
 # Destination paths
 TORRC_DEST="/etc/tor/torrc"
