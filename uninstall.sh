@@ -21,27 +21,38 @@ else
     echo "Base directory $BASE_DIR does not exist, skipping..."
 fi
 
-# Restore default Tor configuration if backup exists
+# Remove the Tor configuration file
 if [ -f "$TORRC_DEST" ]; then
-    echo "Restoring default Tor configuration..."
+    echo "Removing Tor configuration..."
     sudo rm -f "$TORRC_DEST"
-    sudo touch "$TORRC_DEST"
 else
     echo "Tor configuration file $TORRC_DEST does not exist, skipping..."
 fi
 
-# Restore default Privoxy configuration if backup exists
+# Remove the Privoxy configuration file
 if [ -f "$PRIVOXY_CONFIG_DEST" ]; then
-    echo "Restoring default Privoxy configuration..."
+    echo "Removing Privoxy configuration..."
     sudo rm -f "$PRIVOXY_CONFIG_DEST"
-    sudo touch "$PRIVOXY_CONFIG_DEST"
 else
     echo "Privoxy configuration file $PRIVOXY_CONFIG_DEST does not exist, skipping..."
 fi
 
-# Restart services to ensure they run with default configurations
-echo "Restarting Tor and Privoxy services..."
-sudo systemctl restart tor
-sudo systemctl restart privoxy
+# Uninstall Tor and Privoxy
+echo "Uninstalling Tor and Privoxy..."
+sudo apt-get remove --purge -y tor privoxy
+sudo apt-get autoremove --purge -y
 
-echo "Cleanup complete. All files and configurations set by the installation script have been removed."
+# Remove any remaining dependencies for Python virtual environment
+echo "Removing Python virtual environment and dependencies..."
+sudo apt-get remove --purge -y python3-venv python3-pip
+sudo apt-get autoremove --purge -y
+
+# Clean up any remaining configuration or cache files
+echo "Cleaning up remaining files..."
+sudo apt-get clean
+
+# Restart services to apply changes
+echo "Restarting remaining services..."
+sudo systemctl daemon-reload
+
+echo "Cleanup complete. All files, services, and packages set by the installation script have been removed."
