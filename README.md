@@ -8,7 +8,7 @@ Bot written in Python to crawl the given onionsite(s) for any .onion address and
     curl https://raw.githubusercontent.com/BrianTheMint/tor_scraper/refs/heads/main/setup_torscraper.sh | sudo bash
   
    
-## MANUAL
+# MANUAL INSTALL
   
   
   install dependancies
