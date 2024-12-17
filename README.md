@@ -1,5 +1,15 @@
 # Tor Scraper | Tested on Ubuntu 24.04 with python 3.12.3
 Bot written in Python to crawl the given onionsite(s) for any .onion address and qurys them for a title, outputting to a text file
+
+# AUTOMATIC INSTALL
+  Only known working on Ubuntu 24.04
+
+    sudo apt install curl wget -y
+    curl https://raw.githubusercontent.com/BrianTheMint/tor_scraper/refs/heads/main/setup_torscraper.sh | sudo bash
+  
+   
+## MANUAL
+  
   
   install dependancies
   
