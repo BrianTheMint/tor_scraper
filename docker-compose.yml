@@ -1,0 +1,9 @@
+name: tor_scraper
+services:
+    to:
+        container_name: tor_scraper
+        ports:
+            - 9055:9050
+        volumes:
+            - /path/on/host:/home/ubuntu
+        image: shinyjesus/tor_scraper:latest
