@@ -15,6 +15,10 @@ Bot written in Python to crawl the given onionsite(s) for any .onion address and
   
     sudo apt-get update && sudo apt-get install python3 python3-venv python3-pip privoxy nyx -y
 
+# UNINSTALL 
+
+    curl https://raw.githubusercontent.com/BrianTheMint/tor_scraper/refs/heads/main/uninstall.sh | sudo bash
+
 # Clone Repository
   
     git clone https://github.com/OrlandB2045/tor_scraper.git
