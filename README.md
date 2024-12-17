@@ -1,5 +1,5 @@
 # Tor Scraper | Tested on Ubuntu 24.04 with python 3.12.3
-Bot written in Python to crawl a given onionsite for any .onion address and qurys them for a title, outputting to a text file
+Bot written in Python to crawl the given onionsite(s) for any .onion address and qurys them for a title, outputting to a text file
   
   install dependancies
   
