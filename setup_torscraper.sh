@@ -4,10 +4,10 @@
 set -e
 
 # URLs for downloading files
-TORRC_URL="https://github.com/BrianTheMint/tor_scraper/blob/main/torrc"
-PRIVOXY_CONFIG_URL="https://github.com/BrianTheMint/tor_scraper/blob/main/privoxy/config"
-CRAWLER_SCRIPT_URL="https://github.com/BrianTheMint/tor_scraper/blob/main/crawler.py"
-REQUIREMENTS_URL="https://github.com/BrianTheMint/tor_scraper/blob/main/requirements.txt"
+TORRC_URL="https://github.com/BrianTheMint/tor_scraper/blob/de54a4d7447ebc38d5256a126368aab1c1967262/torrc"
+PRIVOXY_CONFIG_URL="https://github.com/BrianTheMint/tor_scraper/blob/de54a4d7447ebc38d5256a126368aab1c1967262/privoxy/config"
+CRAWLER_SCRIPT_URL="https://github.com/BrianTheMint/tor_scraper/blob/de54a4d7447ebc38d5256a126368aab1c1967262/crawler.py"
+REQUIREMENTS_URL="https://github.com/BrianTheMint/tor_scraper/blob/de54a4d7447ebc38d5256a126368aab1c1967262/requirements.txt"
 
 # Detect the user's home directory
 HOME_DIR=$(eval echo "~$USER")
