@@ -16,10 +16,10 @@ import threading
 # Set up logging
 logging.basicConfig(filename="scraper_log.txt", level=logging.INFO, format="%(asctime)s - %(message)s")
 
-# Tor settings (only SOCKS5 now)
+# Tor and Privoxy settings
 TOR_PROXY = 'socks5h://127.0.0.1:9050'  # Tor default SOCKS proxy
 
-# Configure the requests session to use SOCKS5 directly
+# Configure the requests session to use Tor
 session = requests.Session()
 session.proxies = {
     'http': TOR_PROXY,
@@ -39,15 +39,6 @@ adapter = HTTPAdapter(max_retries=retry_strategy)
 session.mount("http://", adapter)
 session.mount("https://", adapter)
 
-def load_max_depth():
-    try:
-        with open('config.txt', 'r') as config_file:
-            return int(config_file.read().strip())  # Read and return the integer value
-    except (FileNotFoundError, ValueError):
-        return 3  # Return the default value if the file doesn't exist or the value is invalid
-
-# Initialize the Tkinter GUI variable with the value read from config.txt (or default to 3)
-depth_var = tk.StringVar(value=str(load_max_depth()))  # Initialize depth_var with the saved value
 # Function to request a new Tor IP address
 def renew_tor_ip():
     with Controller.from_port(port=9051) as controller:
@@ -56,9 +47,9 @@ def renew_tor_ip():
         time.sleep(5)  # Wait for the new IP to be assigned
 
 # Function to scrape .onion address for the title
-def scrape_onion(url, depth, max_depth, visited, writer, text_widget, stop_scraping_flag, failure_counter, failure_threshold):
-    if depth > max_depth or stop_scraping_flag.is_set():
-        return  # Stop recursion if max depth is reached or scraping is stopped
+def scrape_onion(url, depth, max_depth, visited, writer, text_widget):
+    if depth > max_depth:
+        return  # Stop recursion if max depth is reached
 
     # Avoid revisiting the same URL
     if url in visited:
@@ -85,35 +76,23 @@ def scrape_onion(url, depth, max_depth, visited, writer, text_widget, stop_scrap
             for link in links:
                 next_url = urljoin(url, link['href'])  # Resolve relative URLs
                 if next_url.startswith('http'):
-                    scrape_onion(next_url, depth + 1, max_depth, visited, writer, text_widget, stop_scraping_flag, failure_counter, failure_threshold)
+                    scrape_onion(next_url, depth + 1, max_depth, visited, writer, text_widget)
         else:
             log_message = f"Failed to access {url}, Status Code: {response.status_code}"
             logging.warning(log_message)
             text_widget.insert(tk.END, log_message + '\n')
             text_widget.yview(tk.END)  # Scroll to the bottom
             print(f"Failed to access {url}, Status Code: {response.status_code}")
-            failure_counter[url] += 1
-            if failure_counter[url] >= failure_threshold:
-                text_widget.insert(tk.END, f"Too many failures for {url}, switching to the next site.\n")
-                text_widget.yview(tk.END)
-                return  # Stop scraping this site and move to the next one
     except requests.exceptions.RequestException as e:
         log_message = f"Error accessing {url}: {e}"
         logging.error(log_message)
         text_widget.insert(tk.END, log_message + '\n')
         text_widget.yview(tk.END)  # Scroll to the bottom
         print(f"Error accessing {url}: {e}")
-        failure_counter[url] += 1
-        if failure_counter[url] >= failure_threshold:
-            text_widget.insert(tk.END, f"Too many failures for {url}, switching to the next site.\n")
-            text_widget.yview(tk.END)
-            return  # Stop scraping this site and move to the next one
 
 # Function to handle the scraping process in a separate thread
-def start_scraping(onion_file, max_depth, text_widget, stop_scraping_flag):
+def start_scraping(onion_file, max_depth, text_widget):
     visited = set()  # To track visited URLs
-    failure_counter = {}  # Track failure count for each site
-    failure_threshold = 3  # Threshold for maximum failures before skipping a site
 
     # Open CSV file for writing the results
     with open('scraped_onions.csv', mode='w', newline='', encoding='utf-8') as file:
@@ -125,13 +104,26 @@ def start_scraping(onion_file, max_depth, text_widget, stop_scraping_flag):
             onion_addresses = [line.strip() for line in file.readlines()]
 
         for address in onion_addresses:
-            scrape_onion(address, 1, max_depth, visited, writer, text_widget, stop_scraping_flag, failure_counter, failure_threshold)
+            scrape_onion(address, 1, max_depth, visited, writer, text_widget)
 
             # Optionally, renew the Tor IP after each request to avoid being tracked
             renew_tor_ip()
 
     text_widget.insert(tk.END, "Scraping completed!\n")
     text_widget.yview(tk.END)  # Scroll to the bottom
+
+# Function to load the max depth from a configuration file
+def load_max_depth():
+    try:
+        with open('config.txt', 'r') as config_file:
+            return int(config_file.read().strip())  # Read and return the integer value
+    except (FileNotFoundError, ValueError):
+        return 3  # Return the default value if the file doesn't exist or the value is invalid
+
+# Function to save the max depth to a configuration file
+def save_max_depth(max_depth):
+    with open('config.txt', 'w') as config_file:
+        config_file.write(str(max_depth))  # Save the max depth as a string
 
 # GUI function
 def open_file_dialog():
@@ -160,7 +152,7 @@ def run_scraping():
     start_button.config(state=tk.DISABLED)
 
     # Start scraping in a new thread to keep the GUI responsive
-    threading.Thread(target=start_scraping, args=(onion_file, max_depth, text_widget, stop_scraping_flag), daemon=True).start()
+    threading.Thread(target=start_scraping, args=(onion_file, max_depth, text_widget), daemon=True).start()
 
     # Update the GUI text
     text_widget.insert(tk.END, "Scraping started...\n")
@@ -172,6 +164,9 @@ root.title("Tor .onion Scraper")
 
 # Set window size
 root.geometry("700x500")
+
+# Initialize the Tkinter GUI variable with the value read from config.txt (or default to 3)
+depth_var = tk.StringVar(value=str(load_max_depth()))  # Initialize depth_var with the saved value
 
 # File selection section
 file_frame = tk.Frame(root)
@@ -194,8 +189,6 @@ depth_frame.pack(pady=10)
 
 depth_label = tk.Label(depth_frame, text="Max Depth:")
 depth_label.pack(side=tk.TOP, padx=5)
-
-depth_var = tk.StringVar(value=str(load_max_depth()))  # Initialize depth_var with the saved value
 
 depth_entry = tk.Entry(depth_frame, textvariable=depth_var, width=10)
 depth_entry.pack(side=tk.LEFT)
