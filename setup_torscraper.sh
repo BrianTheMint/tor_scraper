@@ -25,7 +25,7 @@ echo "Updating package list and upgrading system..."
 sudo apt-get update -y && sudo apt-get upgrade -y
 
 echo "Installing required packages: git, python3, python3-venv, python3-pip, privoxy, tor, wget..."
-sudo apt-get install -y git python3 python3-venv python3-pip privoxy tor wget
+sudo apt-get install -y git python3 python3-venv python3-pip privoxy tor wget python3-tk
 
 # Clone the repository
 echo "Cloning the repository from $REPO_URL..."
