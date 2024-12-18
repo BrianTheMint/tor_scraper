@@ -4,7 +4,7 @@
 set -e
 
 # Repository URL to clone
-REPO_URL="https://github.com/BrianTheMint/tor_scraper.git"
+REPO_URL="https://github.com/BrianTheMint/tor_scraper.git -b gui"
 
 # Base directory for the setup
 BASE_DIR="/home/$USER/tor_scraper"
