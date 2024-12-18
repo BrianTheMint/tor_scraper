@@ -58,7 +58,7 @@ def scrape_onion(url, depth, max_depth, visited, writer, text_widget):
     visited.add(url)  # Mark this URL as visited
 
     try:
-        response = session.get(url, timeout=30)  # Increased timeout to 30 seconds
+        response = session.get(url, timeout=120)  # Increased timeout to 30 seconds
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             title = soup.title.string if soup.title else "No title"
