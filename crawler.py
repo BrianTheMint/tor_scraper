@@ -183,6 +183,17 @@ root.title("Tor .onion Scraper")
 # Set window size (25% bigger)
 root.geometry("875x625")
 
+# Create a menu bar
+menu_bar = tk.Menu(root)
+root.config(menu=menu_bar)
+
+# Create a File menu and add it to the menu bar
+file_menu = tk.Menu(menu_bar, tearoff=0)
+menu_bar.add_cascade(label="File", menu=file_menu)
+
+# Add a Quit option to the File menu
+file_menu.add_command(label="Quit", command=root.quit)
+
 # Initialize the Tkinter GUI variable with the value read from config.json (or default to 3)
 depth_var = tk.StringVar(value=str(load_max_depth()))
 
