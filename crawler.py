@@ -8,7 +8,6 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from urllib.parse import urljoin
 import csv
-import argparse
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import threading
@@ -48,7 +47,7 @@ def renew_tor_ip():
         time.sleep(5)  # Wait for the new IP to be assigned
 
 # Function to scrape .onion address for the title
-def scrape_onion(url, depth, max_depth, visited, writer, text_widget, stop_scraping_flag):
+def scrape_onion(url, depth, max_depth, visited, writer, text_widget, stop_scraping_flag, failure_counter, failure_threshold):
     if depth > max_depth or stop_scraping_flag.is_set():
         return  # Stop recursion if max depth is reached or scraping is stopped
 
@@ -77,23 +76,34 @@ def scrape_onion(url, depth, max_depth, visited, writer, text_widget, stop_scrap
             for link in links:
                 next_url = urljoin(url, link['href'])  # Resolve relative URLs
                 if next_url.startswith('http'):
-                    scrape_onion(next_url, depth + 1, max_depth, visited, writer, text_widget, stop_scraping_flag)
+                    scrape_onion(next_url, depth + 1, max_depth, visited, writer, text_widget, stop_scraping_flag, failure_counter, failure_threshold)
         else:
             log_message = f"Failed to access {url}, Status Code: {response.status_code}"
             logging.warning(log_message)
             text_widget.insert(tk.END, log_message + '\n')
             text_widget.yview(tk.END)  # Scroll to the bottom
             print(f"Failed to access {url}, Status Code: {response.status_code}")
+            failure_counter[url] += 1
+            if failure_counter[url] >= failure_threshold:
+                text_widget.insert(tk.END, f"Too many failures for {url}, switching to the next site.\n")
+                text_widget.yview(tk.END)
+                return  # Stop scraping this site and move to the next one
     except requests.exceptions.RequestException as e:
         log_message = f"Error accessing {url}: {e}"
         logging.error(log_message)
         text_widget.insert(tk.END, log_message + '\n')
         text_widget.yview(tk.END)  # Scroll to the bottom
         print(f"Error accessing {url}: {e}")
+        failure_counter[url] += 1
+        if failure_counter[url] >= failure_threshold:
+            text_widget.insert(tk.END, f"Too many failures for {url}, switching to the next site.\n")
+            text_widget.yview(tk.END)
+            return  # Stop scraping this site and move to the next one
 
 # Function to handle the scraping process in a separate thread
-def start_scraping(onion_file, max_depth, text_widget, stop_scraping_flag):
+def start_scraping(onion_file, max_depth, text_widget, stop_scraping_flag, failure_threshold):
     visited = set()  # To track visited URLs
+    failure_counter = {}  # Dictionary to track failures for each URL
 
     # Open CSV file for writing the results
     with open('scraped_onions.csv', mode='w', newline='', encoding='utf-8') as file:
@@ -105,7 +115,8 @@ def start_scraping(onion_file, max_depth, text_widget, stop_scraping_flag):
             onion_addresses = [line.strip() for line in file.readlines()]
 
         for address in onion_addresses:
-            scrape_onion(address, 1, max_depth, visited, writer, text_widget, stop_scraping_flag)
+            failure_counter[address] = 0  # Initialize failure counter for each site
+            scrape_onion(address, 1, max_depth, visited, writer, text_widget, stop_scraping_flag, failure_counter, failure_threshold)
 
             # Optionally, renew the Tor IP after each request to avoid being tracked
             renew_tor_ip()
@@ -155,8 +166,11 @@ def run_scraping():
     # Set flag to control stopping scraping
     stop_scraping_flag.clear()
 
+    # Set failure threshold (maximum number of failures before switching to another site)
+    failure_threshold = 3
+
     # Start scraping in a new thread to keep the GUI responsive
-    threading.Thread(target=start_scraping, args=(onion_file, max_depth, text_widget, stop_scraping_flag), daemon=True).start()
+    threading.Thread(target=start_scraping, args=(onion_file, max_depth, text_widget, stop_scraping_flag, failure_threshold), daemon=True).start()
 
     # Update the GUI text
     text_widget.insert(tk.END, "Scraping started...\n")
@@ -202,7 +216,7 @@ depth_var = tk.StringVar(value=str(load_max_depth()))  # Initialize depth_var wi
 depth_entry = tk.Entry(depth_frame, textvariable=depth_var, width=10)
 depth_entry.pack(side=tk.LEFT)
 
-# Start/Stop button
+# Start button
 start_button = tk.Button(root, text="Start Scraping", command=run_scraping)
 start_button.pack(pady=20)
 
@@ -213,7 +227,7 @@ text_frame.pack(pady=10)
 text_widget = tk.Text(text_frame, height=15, width=80)
 text_widget.pack()
 
-# Flag to control stopping the scraping process
+# Flag to control stopping scraping
 stop_scraping_flag = threading.Event()
 
 # Start the GUI main loop
