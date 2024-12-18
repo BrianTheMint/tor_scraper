@@ -4,9 +4,12 @@ import subprocess
 # Function to check if Tor is installed
 def check_tor_installed():
     try:
-        subprocess.run(['command', '-v', 'tor'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # Try running the 'tor' command directly to see if it's installed
+        subprocess.run(['tor', '--version'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return True
     except subprocess.CalledProcessError:
+        return False
+    except FileNotFoundError:
         return False
 
 # Function to create and start Tor instance
