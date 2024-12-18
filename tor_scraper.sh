@@ -8,7 +8,7 @@ cd /tor_scraper
 source venv/bin/activate
 
 # Run the Python script
-python ./crawler.py
+python3 ./crawler.py
 
 # Deactivate the virtual environment after the script finishes
 deactivate
