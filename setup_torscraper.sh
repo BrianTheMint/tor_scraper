@@ -4,7 +4,7 @@
 set -e
 
 # Repository URL to clone
-REPO_URL="https://github.com/BrianTheMint/tor_scraper.git -b gui"
+REPO_URL="https://github.com/BrianTheMint/tor_scraper.git"
 
 # Base directory for the setup
 BASE_DIR="/home/$USER/tor_scraper"
@@ -29,7 +29,7 @@ sudo apt-get install -y git python3 python3-venv python3-pip privoxy tor wget py
 
 # Clone the repository
 echo "Cloning the repository from $REPO_URL..."
-git clone "$REPO_URL" "$BASE_DIR"
+git clone "$REPO_URL" -b gui "$BASE_DIR"
 
 # Move the configuration files to the correct locations
 echo "Moving torrc to $TORRC_DEST..."
