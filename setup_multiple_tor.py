@@ -28,7 +28,7 @@ def create_and_start_tor_instance(instance_num, tor_port, control_port, tor_data
 SocksPort {tor_port}
 ControlPort {control_port}
 DataDirectory {tor_data_dir}
-CookieAuthentication 1
+# CookieAuthentication 1
 
 # Log settings
 Log notice file {tor_data_dir}/tor.log

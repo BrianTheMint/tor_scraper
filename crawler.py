@@ -48,8 +48,8 @@ def renew_tor_ip():
 
 # Function to scrape .onion address for the title
 def scrape_onion(url, depth, max_depth, visited, writer, text_widget):
-    if depth > max_depth:
-        return  # Stop recursion if max depth is reached
+    if depth > max_depth or stop_scraping_flag.is_set():
+        return  # Stop recursion if max depth is reached or stop flag is set
 
     # Avoid revisiting the same URL
     if url in visited:
@@ -104,6 +104,8 @@ def start_scraping(onion_file, max_depth, text_widget):
             onion_addresses = [line.strip() for line in file.readlines()]
 
         for address in onion_addresses:
+            if stop_scraping_flag.is_set():
+                break
             scrape_onion(address, 1, max_depth, visited, writer, text_widget)
 
             # Optionally, renew the Tor IP after each request to avoid being tracked
@@ -111,6 +113,7 @@ def start_scraping(onion_file, max_depth, text_widget):
 
     text_widget.insert(tk.END, "Scraping completed!\n")
     text_widget.yview(tk.END)  # Scroll to the bottom
+    start_button.config(text="Start Scraping", state=tk.NORMAL)  # Reset button text and state
 
 # Function to load the max depth from a configuration file
 def load_max_depth():
@@ -132,31 +135,38 @@ def open_file_dialog():
         onion_file_var.set(filename)
 
 def run_scraping():
-    onion_file = onion_file_var.get()
-    if not onion_file:
-        messagebox.showerror("Error", "Please select a valid .onion URL file.")
-        return
+    if start_button.config('text')[-1] == 'Start Scraping':
+        onion_file = onion_file_var.get()
+        if not onion_file:
+            messagebox.showerror("Error", "Please select a valid .onion URL file.")
+            return
 
-    try:
-        max_depth = int(depth_var.get())
-        if max_depth < 1:
-            raise ValueError
-    except ValueError:
-        messagebox.showerror("Error", "Please enter a valid integer for depth.")
-        return
+        try:
+            max_depth = int(depth_var.get())
+            if max_depth < 1:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("Error", "Please enter a valid integer for depth.")
+            return
 
-    # Save the max depth for future sessions
-    save_max_depth(max_depth)
+        # Save the max depth for future sessions
+        save_max_depth(max_depth)
 
-    # Disable the button to prevent multiple clicks
-    start_button.config(state=tk.DISABLED)
+        # Disable the button to prevent multiple clicks
+        start_button.config(text="Stop Scraping", state=tk.NORMAL)
 
-    # Start scraping in a new thread to keep the GUI responsive
-    threading.Thread(target=start_scraping, args=(onion_file, max_depth, text_widget), daemon=True).start()
+        # Clear the stop flag
+        stop_scraping_flag.clear()
 
-    # Update the GUI text
-    text_widget.insert(tk.END, "Scraping started...\n")
-    text_widget.yview(tk.END)  # Scroll to the bottom
+        # Start scraping in a new thread to keep the GUI responsive
+        threading.Thread(target=start_scraping, args=(onion_file, max_depth, text_widget), daemon=True).start()
+
+        # Update the GUI text
+        text_widget.insert(tk.END, "Scraping started...\n")
+        text_widget.yview(tk.END)  # Scroll to the bottom
+    else:
+        stop_scraping_flag.set()
+        start_button.config(text="Start Scraping", state=tk.NORMAL)
 
 # Create the main window
 root = tk.Tk()
