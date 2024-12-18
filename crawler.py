@@ -34,13 +34,7 @@ retry_strategy = Retry(
     total=5,  # Retry up to 5 times
     backoff_factor=2,  # Exponential backoff factor
     status_forcelist=[500, 502, 503, 504],  # Retry on server errors
-    allowed_methods=["GET", "POST"],  # Retry only GET and POST requests
 )
-
-# Attach retry strategy to the session
-adapter = HTTPAdapter(max_retries=retry_strategy)
-session.mount("http://", adapter)
-session.mount("https://", adapter)
 
 # JSON file to store the max depth value
 CONFIG_FILE = "config.json"
@@ -178,6 +172,10 @@ def run_scraping():
 def setup_multiple_tor():
     subprocess.Popen(['python3', 'setup_multiple_tor.py'])
 
+# Function to close all Tor instances
+def close_all_tor_instances():
+    subprocess.Popen(['pkill', 'tor'])
+
 # Create the main window
 root = tk.Tk()
 root.title("Tor .onion Scraper")
@@ -230,9 +228,17 @@ text_frame.pack(pady=10)
 text_widget = tk.Text(text_frame, height=15, width=80)
 text_widget.pack()
 
-# Setup Multiple Tor button at the center-bottom
-setup_tor_button = tk.Button(root, text="Setup Multiple Tor", command=setup_multiple_tor)
-setup_tor_button.pack(side=tk.BOTTOM, pady=20)
+# Frame for Tor control buttons
+tor_control_frame = tk.Frame(root)
+tor_control_frame.pack(pady=10)
+
+# Setup Tor button
+setup_tor_button = tk.Button(tor_control_frame, text="Setup Tor Instances", command=setup_multiple_tor)
+setup_tor_button.pack(side=tk.LEFT, padx=10)
+
+# Close Tor button
+close_tor_button = tk.Button(tor_control_frame, text="Close Tor Instances", command=close_all_tor_instances)
+close_tor_button.pack(side=tk.LEFT, padx=10)
 
 # Flag to control stopping scraping
 stop_scraping_flag = threading.Event()
