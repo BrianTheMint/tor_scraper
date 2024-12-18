@@ -7,7 +7,7 @@ set -e
 REPO_URL="https://github.com/BrianTheMint/tor_scraper.git"
 
 # Base directory for the setup
-BASE_DIR="/home/$USER/tor_scraper"
+BASE_DIR="/tor_scraper"
 
 # Destination paths
 TORRC_DEST="/etc/tor/torrc"
