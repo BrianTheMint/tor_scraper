@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Navigate to the /tor_scraper directory
+cd /
 cd /tor_scraper
 
 # Activate the virtual environment
