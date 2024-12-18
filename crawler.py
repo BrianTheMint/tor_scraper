@@ -8,6 +8,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from urllib.parse import urljoin
 import csv
+import argparse
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import threading
@@ -15,15 +16,14 @@ import threading
 # Set up logging
 logging.basicConfig(filename="scraper_log.txt", level=logging.INFO, format="%(asctime)s - %(message)s")
 
-# Tor and Privoxy settings
+# Tor settings (only SOCKS5 now)
 TOR_PROXY = 'socks5h://127.0.0.1:9050'  # Tor default SOCKS proxy
-PRIVOXY_PROXY = 'http://127.0.0.1:8118'  # Privoxy default HTTP proxy
 
-# Configure the requests session to use Privoxy via Tor
+# Configure the requests session to use SOCKS5 directly
 session = requests.Session()
 session.proxies = {
-    'http': PRIVOXY_PROXY,
-    'https': PRIVOXY_PROXY,
+    'http': TOR_PROXY,
+    'https': TOR_PROXY,
 }
 
 # Configure retries (fix allowed_methods)
@@ -101,9 +101,10 @@ def scrape_onion(url, depth, max_depth, visited, writer, text_widget, stop_scrap
             return  # Stop scraping this site and move to the next one
 
 # Function to handle the scraping process in a separate thread
-def start_scraping(onion_file, max_depth, text_widget, stop_scraping_flag, failure_threshold):
+def start_scraping(onion_file, max_depth, text_widget, stop_scraping_flag):
     visited = set()  # To track visited URLs
-    failure_counter = {}  # Dictionary to track failures for each URL
+    failure_counter = {}  # Track failure count for each site
+    failure_threshold = 3  # Threshold for maximum failures before skipping a site
 
     # Open CSV file for writing the results
     with open('scraped_onions.csv', mode='w', newline='', encoding='utf-8') as file:
@@ -115,7 +116,6 @@ def start_scraping(onion_file, max_depth, text_widget, stop_scraping_flag, failu
             onion_addresses = [line.strip() for line in file.readlines()]
 
         for address in onion_addresses:
-            failure_counter[address] = 0  # Initialize failure counter for each site
             scrape_onion(address, 1, max_depth, visited, writer, text_widget, stop_scraping_flag, failure_counter, failure_threshold)
 
             # Optionally, renew the Tor IP after each request to avoid being tracked
@@ -123,19 +123,6 @@ def start_scraping(onion_file, max_depth, text_widget, stop_scraping_flag, failu
 
     text_widget.insert(tk.END, "Scraping completed!\n")
     text_widget.yview(tk.END)  # Scroll to the bottom
-
-# Function to load the max depth from a configuration file
-def load_max_depth():
-    try:
-        with open('config.txt', 'r') as config_file:
-            return int(config_file.read().strip())  # Read and return the integer value
-    except (FileNotFoundError, ValueError):
-        return 3  # Return the default value if the file doesn't exist or the value is invalid
-
-# Function to save the max depth to a configuration file
-def save_max_depth(max_depth):
-    with open('config.txt', 'w') as config_file:
-        config_file.write(str(max_depth))  # Save the max depth as a string
 
 # GUI function
 def open_file_dialog():
@@ -160,27 +147,15 @@ def run_scraping():
     # Save the max depth for future sessions
     save_max_depth(max_depth)
 
-    # Switch button text to "Stop Scraping"
-    start_button.config(text="Stop Scraping", command=stop_scraping)
-
-    # Set flag to control stopping scraping
-    stop_scraping_flag.clear()
-
-    # Set failure threshold (maximum number of failures before switching to another site)
-    failure_threshold = 3
+    # Disable the button to prevent multiple clicks
+    start_button.config(state=tk.DISABLED)
 
     # Start scraping in a new thread to keep the GUI responsive
-    threading.Thread(target=start_scraping, args=(onion_file, max_depth, text_widget, stop_scraping_flag, failure_threshold), daemon=True).start()
+    threading.Thread(target=start_scraping, args=(onion_file, max_depth, text_widget, stop_scraping_flag), daemon=True).start()
 
     # Update the GUI text
     text_widget.insert(tk.END, "Scraping started...\n")
     text_widget.yview(tk.END)  # Scroll to the bottom
-
-def stop_scraping():
-    stop_scraping_flag.set()  # Set the flag to stop the scraping process
-    start_button.config(text="Start Scraping", command=run_scraping)  # Reset button text to "Start Scraping"
-    text_widget.insert(tk.END, "Scraping stopped.\n")
-    text_widget.yview(tk.END)
 
 # Create the main window
 root = tk.Tk()

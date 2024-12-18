@@ -11,7 +11,6 @@ BASE_DIR="/tor_scraper"
 
 # Destination paths
 TORRC_DEST="/etc/tor/torrc"
-PRIVOXY_CONFIG_DEST="/etc/privoxy/config"
 CRAWLER_DEST="$BASE_DIR/crawler.py"
 REQUIREMENTS_DEST="$BASE_DIR/requirements.txt"
 VENV_DIR="$BASE_DIR/venv"
@@ -25,7 +24,7 @@ echo "Updating package list and upgrading system..."
 sudo apt-get update -y && sudo apt-get upgrade -y
 
 echo "Installing required packages: git, python3, python3-venv, python3-pip, privoxy, tor, wget..."
-sudo apt-get install -y git python3 python3-venv python3-pip privoxy tor wget python3-tk
+sudo apt-get install -y git python3 python3-venv python3-pip tor wget python3-tk
 
 # Clone the repository
 echo "Cloning the repository from $REPO_URL..."
@@ -34,9 +33,6 @@ git clone "$REPO_URL" -b gui "$BASE_DIR"
 # Move the configuration files to the correct locations
 echo "Moving torrc to $TORRC_DEST..."
 sudo mv "$BASE_DIR/torrc" "$TORRC_DEST"
-
-echo "Moving privoxy config to $PRIVOXY_CONFIG_DEST..."
-sudo mv "$BASE_DIR/privoxy/config" "$PRIVOXY_CONFIG_DEST"
 
 # Set permissions for crawler.py
 echo "Setting permissions for crawler.py..."
@@ -59,7 +55,6 @@ sudo chmod -R 777 "$BASE_DIR"
 # Restart services to apply changes
 echo "Restarting Tor and Privoxy services..."
 sudo systemctl restart tor
-sudo systemctl restart privoxy
 
 echo "Installation, configuration, and virtual environment setup complete."
 echo "All files are located in $BASE_DIR."
