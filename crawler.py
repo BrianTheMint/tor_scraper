@@ -8,6 +8,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from urllib.parse import urljoin
 import csv
+import argparse
 
 # Set up logging
 logging.basicConfig(filename="scraper_log.txt", level=logging.INFO, format="%(asctime)s - %(message)s")
@@ -26,7 +27,7 @@ session.proxies = {
 # Configure retries (fix allowed_methods)
 retry_strategy = Retry(
     total=5,  # Retry up to 5 times
-    backoff_factor=1,  # Exponential backoff factor
+    backoff_factor=2,  # Exponential backoff factor
     status_forcelist=[500, 502, 503, 504],  # Retry on server errors
     allowed_methods=["GET", "POST"],  # Retry only GET and POST requests
 )
@@ -78,17 +79,21 @@ def scrape_onion(url, depth, max_depth, visited, writer):
         logging.error(f"Error accessing {url}: {e}")
         print(f"Error accessing {url}: {e}")
 
-# Main function to read .onion addresses and scrape
+# Main function to read .onion addresses from a file and scrape
 def main():
-    # Define max depth and .onion URLs directly in the script
-    max_depth = 3  # Set the desired max depth here
-    onion_addresses = [
-        "http://bhlnasxdkbaoxf4gtpbhavref7l2j3bwooes77hqcacxztkindztzrad.onion/",
-        "http://t3g5mz7kgivhgzua64vxmu7ieyyoyzgd423itqjortjhh64lcvspyayd.onion/",
-        "http://dreadytofatroptsdj6io7l3xptbet6onoyno2yv7jicoxknyazubrad.onion",
-        "http://3mcm3cathoi5eahjeq7e5tgessfktszioxyf4rnx2ug7ab3ilzvgwfyd.onion/",
-        "http://lp2fkbyfmiefvscyawqvssyh7rnwfjsifdhebp5me5xizte3s47yusqd.onion",
-    ]
+    # Set up argument parsing
+    parser = argparse.ArgumentParser(description="Scrape .onion websites via Tor.")
+    parser.add_argument("onion_file", help="Path to a text file containing .onion URLs")
+    parser.add_argument("--max_depth", type=int, default=3, help="Maximum depth to scrape")
+    args = parser.parse_args()
+
+    # Read .onion URLs from the file
+    try:
+        with open(args.onion_file, 'r') as file:
+            onion_addresses = [line.strip() for line in file.readlines()]
+    except FileNotFoundError:
+        print(f"Error: The file {args.onion_file} was not found.")
+        return
 
     visited = set()  # To track visited URLs
 
@@ -99,7 +104,7 @@ def main():
         writer.writerow(['.onion URL', 'Page Title'])
 
         for address in onion_addresses:
-            scrape_onion(address, 1, max_depth, visited, writer)
+            scrape_onion(address, 1, args.max_depth, visited, writer)
 
             # Optionally, renew the Tor IP after each request to avoid being tracked
             renew_tor_ip()
