@@ -48,9 +48,9 @@ def renew_tor_ip():
         time.sleep(5)  # Wait for the new IP to be assigned
 
 # Function to scrape .onion address for the title
-def scrape_onion(url, depth, max_depth, visited, writer, text_widget):
-    if depth > max_depth:
-        return  # Stop recursion if max depth is reached
+def scrape_onion(url, depth, max_depth, visited, writer, text_widget, stop_scraping_flag):
+    if depth > max_depth or stop_scraping_flag.is_set():
+        return  # Stop recursion if max depth is reached or scraping is stopped
 
     # Avoid revisiting the same URL
     if url in visited:
@@ -77,7 +77,7 @@ def scrape_onion(url, depth, max_depth, visited, writer, text_widget):
             for link in links:
                 next_url = urljoin(url, link['href'])  # Resolve relative URLs
                 if next_url.startswith('http'):
-                    scrape_onion(next_url, depth + 1, max_depth, visited, writer, text_widget)
+                    scrape_onion(next_url, depth + 1, max_depth, visited, writer, text_widget, stop_scraping_flag)
         else:
             log_message = f"Failed to access {url}, Status Code: {response.status_code}"
             logging.warning(log_message)
@@ -92,7 +92,7 @@ def scrape_onion(url, depth, max_depth, visited, writer, text_widget):
         print(f"Error accessing {url}: {e}")
 
 # Function to handle the scraping process in a separate thread
-def start_scraping(onion_file, max_depth, text_widget):
+def start_scraping(onion_file, max_depth, text_widget, stop_scraping_flag):
     visited = set()  # To track visited URLs
 
     # Open CSV file for writing the results
@@ -105,7 +105,7 @@ def start_scraping(onion_file, max_depth, text_widget):
             onion_addresses = [line.strip() for line in file.readlines()]
 
         for address in onion_addresses:
-            scrape_onion(address, 1, max_depth, visited, writer, text_widget)
+            scrape_onion(address, 1, max_depth, visited, writer, text_widget, stop_scraping_flag)
 
             # Optionally, renew the Tor IP after each request to avoid being tracked
             renew_tor_ip()
@@ -149,15 +149,24 @@ def run_scraping():
     # Save the max depth for future sessions
     save_max_depth(max_depth)
 
-    # Disable the button to prevent multiple clicks
-    start_button.config(state=tk.DISABLED)
+    # Switch button text to "Stop Scraping"
+    start_button.config(text="Stop Scraping", command=stop_scraping)
+
+    # Set flag to control stopping scraping
+    stop_scraping_flag.clear()
 
     # Start scraping in a new thread to keep the GUI responsive
-    threading.Thread(target=start_scraping, args=(onion_file, max_depth, text_widget), daemon=True).start()
+    threading.Thread(target=start_scraping, args=(onion_file, max_depth, text_widget, stop_scraping_flag), daemon=True).start()
 
     # Update the GUI text
     text_widget.insert(tk.END, "Scraping started...\n")
     text_widget.yview(tk.END)  # Scroll to the bottom
+
+def stop_scraping():
+    stop_scraping_flag.set()  # Set the flag to stop the scraping process
+    start_button.config(text="Start Scraping", command=run_scraping)  # Reset button text to "Start Scraping"
+    text_widget.insert(tk.END, "Scraping stopped.\n")
+    text_widget.yview(tk.END)
 
 # Create the main window
 root = tk.Tk()
@@ -193,7 +202,7 @@ depth_var = tk.StringVar(value=str(load_max_depth()))  # Initialize depth_var wi
 depth_entry = tk.Entry(depth_frame, textvariable=depth_var, width=10)
 depth_entry.pack(side=tk.LEFT)
 
-# Start button
+# Start/Stop button
 start_button = tk.Button(root, text="Start Scraping", command=run_scraping)
 start_button.pack(pady=20)
 
@@ -203,6 +212,9 @@ text_frame.pack(pady=10)
 
 text_widget = tk.Text(text_frame, height=15, width=80)
 text_widget.pack()
+
+# Flag to control stopping the scraping process
+stop_scraping_flag = threading.Event()
 
 # Start the GUI main loop
 root.mainloop()
