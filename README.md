@@ -63,7 +63,8 @@ Bot written in Python to crawl the given onionsite(s) for any .onion address and
 
 # Run The Script!
 
-    python crawler.py
+    modify onion_urls.txt to fit your needs
+    python crawler.py <urls.txt> --max_depth <x>
 
 
 
