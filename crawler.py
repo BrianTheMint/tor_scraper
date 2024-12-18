@@ -39,6 +39,15 @@ adapter = HTTPAdapter(max_retries=retry_strategy)
 session.mount("http://", adapter)
 session.mount("https://", adapter)
 
+def load_max_depth():
+    try:
+        with open('config.txt', 'r') as config_file:
+            return int(config_file.read().strip())  # Read and return the integer value
+    except (FileNotFoundError, ValueError):
+        return 3  # Return the default value if the file doesn't exist or the value is invalid
+
+# Initialize the Tkinter GUI variable with the value read from config.txt (or default to 3)
+depth_var = tk.StringVar(value=str(load_max_depth()))  # Initialize depth_var with the saved value
 # Function to request a new Tor IP address
 def renew_tor_ip():
     with Controller.from_port(port=9051) as controller:
