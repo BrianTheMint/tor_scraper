@@ -47,9 +47,6 @@ ControlPort $CONTROL_PORT
 DataDirectory $TOR_DATA_DIR
 CookieAuthentication 1
 
-# Optional: Use a new identity every 10 minutes (customize based on your needs)
-NewIdentityDelay 10 minutes
-
 # Log settings (adjust verbosity as needed)
 Log notice file $TOR_DATA_DIR/tor.log
 EOF
