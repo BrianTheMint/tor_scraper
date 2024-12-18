@@ -13,7 +13,10 @@ def check_tor_installed():
         return False
 
 # Function to create and start Tor instance
-def create_and_start_tor_instance(instance_num, tor_port, control_port, tor_data_dir_base="/var/lib/tor"):
+def create_and_start_tor_instance(instance_num, tor_port, control_port, tor_data_dir_base=None):
+    if tor_data_dir_base is None:
+        tor_data_dir_base = os.path.join(os.path.expanduser("~"), "tor_data")
+
     # Create data directory for this instance
     tor_data_dir = f"{tor_data_dir_base}_instance_{instance_num}"
     os.makedirs(tor_data_dir, exist_ok=True)

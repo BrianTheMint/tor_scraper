@@ -1,3 +1,4 @@
 scraped_onions.csv
 scraper_log.txt
 venv/
+config.json

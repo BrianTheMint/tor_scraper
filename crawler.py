@@ -12,6 +12,9 @@ import argparse
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import threading
+import subprocess
+import json
+import os
 
 # Set up logging
 logging.basicConfig(filename="scraper_log.txt", level=logging.INFO, format="%(asctime)s - %(message)s")
@@ -38,6 +41,22 @@ retry_strategy = Retry(
 adapter = HTTPAdapter(max_retries=retry_strategy)
 session.mount("http://", adapter)
 session.mount("https://", adapter)
+
+# JSON file to store the max depth value
+CONFIG_FILE = "config.json"
+
+# Function to load max depth from JSON file
+def load_max_depth():
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as f:
+            config = json.load(f)
+            return config.get("max_depth", 3)
+    return 3
+
+# Function to save max depth to JSON file
+def save_max_depth(value):
+    with open(CONFIG_FILE, "w") as f:
+        json.dump({"max_depth": value}, f)
 
 # Function to request a new Tor IP address
 def renew_tor_ip():
@@ -115,19 +134,6 @@ def start_scraping(onion_file, max_depth, text_widget):
     text_widget.yview(tk.END)  # Scroll to the bottom
     start_button.config(text="Start Scraping", state=tk.NORMAL)  # Reset button text and state
 
-# Function to load the max depth from a configuration file
-def load_max_depth():
-    try:
-        with open('config.txt', 'r') as config_file:
-            return int(config_file.read().strip())  # Read and return the integer value
-    except (FileNotFoundError, ValueError):
-        return 3  # Return the default value if the file doesn't exist or the value is invalid
-
-# Function to save the max depth to a configuration file
-def save_max_depth(max_depth):
-    with open('config.txt', 'w') as config_file:
-        config_file.write(str(max_depth))  # Save the max depth as a string
-
 # GUI function
 def open_file_dialog():
     filename = filedialog.askopenfilename(title="Select .onion URL file", filetypes=[("Text files", "*.txt")])
@@ -168,15 +174,25 @@ def run_scraping():
         stop_scraping_flag.set()
         start_button.config(text="Start Scraping", state=tk.NORMAL)
 
+# Function to call setup_multiple_tor.py
+def setup_multiple_tor():
+    subprocess.Popen(['python3', 'setup_multiple_tor.py'])
+
 # Create the main window
 root = tk.Tk()
 root.title("Tor .onion Scraper")
 
-# Set window size
-root.geometry("700x500")
+# Set window size (25% bigger)
+root.geometry("875x625")
 
-# Initialize the Tkinter GUI variable with the value read from config.txt (or default to 3)
-depth_var = tk.StringVar(value=str(load_max_depth()))  # Initialize depth_var with the saved value
+# Initialize the Tkinter GUI variable with the value read from config.json (or default to 3)
+depth_var = tk.StringVar(value=str(load_max_depth()))
+
+# Update the JSON file when the depth_var changes
+def on_depth_change(*args):
+    save_max_depth(depth_var.get())
+
+depth_var.trace_add("write", on_depth_change)
 
 # File selection section
 file_frame = tk.Frame(root)
@@ -213,6 +229,10 @@ text_frame.pack(pady=10)
 
 text_widget = tk.Text(text_frame, height=15, width=80)
 text_widget.pack()
+
+# Setup Multiple Tor button at the center-bottom
+setup_tor_button = tk.Button(root, text="Setup Multiple Tor", command=setup_multiple_tor)
+setup_tor_button.pack(side=tk.BOTTOM, pady=20)
 
 # Flag to control stopping scraping
 stop_scraping_flag = threading.Event()
