@@ -114,7 +114,7 @@ def scrape_onion(url, depth, max_depth, visited, text_widget, proxy):
 
             for link in soup.find_all("a"):
                 href = link.get("href")
-                if href and href.startswith("http"):
+                if href and href.endswith(".onion"):
                     scrape_onion(href, depth + 1, max_depth, visited, text_widget, proxy)
     except Exception as e:
         logging.error(f"Error scraping {url}: {e}")
@@ -218,6 +218,30 @@ def setup_multiple_tor():
 # Function to close all Tor instances
 def close_all_tor_instances():
     subprocess.Popen(['pkill', 'tor'])
+
+# Function to check if Tor is running
+def is_tor_running():
+    try:
+        output = subprocess.check_output(['pgrep', 'tor'])
+        return bool(output.strip())
+    except subprocess.CalledProcessError:
+        return False
+
+# Function to restart Tor instances
+def restart_tor_instances():
+    close_all_tor_instances()
+    start_tor_instances()
+
+# Function to periodically check and restart Tor if needed
+def monitor_tor():
+    while True:
+        if not is_tor_running():
+            logging.warning("Tor is not running. Restarting Tor instances.")
+            restart_tor_instances()
+        time.sleep(60)  # Check every 60 seconds
+
+# Start the Tor monitoring thread
+threading.Thread(target=monitor_tor, daemon=True).start()
 
 # Create the main window
 root = tk.Tk()
