@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Clone the repository and checkout the gui-muli-tor branch
-git clone -b gui-muli-tor https://github.com/BrianTheMint/tor_scraper.git /tor_scraper_gui_multi
+git clone https://github.com/BrianTheMint/tor_scraper.git -b gui-multi-tor
 
 # Make the folder accessible to everyone
 chmod -R 777 /tor_scraper_gui_multi
