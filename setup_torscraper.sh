@@ -14,7 +14,7 @@ sudo apt-get update
 sudo apt-get install -y python3 python3-venv python3-pip python3-tk tor
 
 # Set up a virtual environment in /tor_scraper_gui_multi/tor_scraper
-cd /tor_scraper_gui_multi/tor_scraper
+cd /tor_scraper_gui_multi
 python3 -m venv venv
 
 # Activate the virtual environment and install requirements
