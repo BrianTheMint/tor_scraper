@@ -27,32 +27,49 @@ def load_config():
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, "r") as f:
             return json.load(f)
-    return {"max_depth": 3, "tor_proxy": "socks5h://127.0.0.1:9050"}
+    return {"max_depth": 3, "tor_proxies": ["socks5h://127.0.0.1:9050", "socks5h://127.0.0.1:9051", "socks5h://127.0.0.1:9052", "socks5h://127.0.0.1:9053"]}
 
 # Function to save configuration to JSON file
 def save_config(config):
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f)
 
-# Load configuration
+# Function to start Tor instances
+def start_tor_instances():
+    home_dir = os.path.expanduser("~")
+    torrc_files = [os.path.join(home_dir, f"torrc{i}") for i in range(4)]
+    for i, torrc in enumerate(torrc_files):
+        with open(torrc, "w") as f:
+            f.write(f"SocksPort 905{i}\nDataDirectory {home_dir}/.tor{i}")
+        subprocess.Popen(["tor", "-f", torrc])
+
+# Function to switch Tor proxies in a round-robin fashion
+class TorProxyManager:
+    def __init__(self, proxies):
+        self.proxies = proxies
+        self.index = 0
+
+    def get_next_proxy(self):
+        proxy = self.proxies[self.index]
+        self.index = (self.index + 1) % len(self.proxies)
+        return proxy
+
+# Load configuration and start Tor instances
 config = load_config()
+start_tor_instances()
+proxy_manager = TorProxyManager(config["tor_proxies"])
 
-# Tor and Privoxy settings
-TOR_PROXY = config.get("tor_proxy", "socks5h://127.0.0.1:9050")
-
-# Configure the requests session to use Tor
-session = requests.Session()
-session.proxies = {
-    'http': TOR_PROXY,
-    'https': TOR_PROXY,
-}
-
-# Configure retries (fix allowed_methods)
-retry_strategy = Retry(
-    total=5,  # Retry up to 5 times
-    backoff_factor=2,  # Exponential backoff factor
-    status_forcelist=[500, 502, 503, 504],  # Retry on server errors
-)
+# Function to make a request using the next Tor proxy
+def make_request(url):
+    proxy = proxy_manager.get_next_proxy()
+    session = requests.Session()
+    session.proxies = {"http": proxy, "https": proxy}
+    retry = Retry(total=5, backoff_factor=1, status_forcelist=[502, 503, 504])
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    response = session.get(url)
+    return response
 
 # Function to load max depth from JSON file
 def load_max_depth():
@@ -82,7 +99,7 @@ def scrape_onion(url, depth, max_depth, visited, writer, text_widget):
     visited.add(url)  # Mark this URL as visited
 
     try:
-        response = session.get(url, timeout=120)  # Increased timeout to 120 seconds
+        response = make_request(url)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             title = soup.title.string if soup.title else "No title"
