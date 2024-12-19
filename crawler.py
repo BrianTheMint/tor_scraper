@@ -86,7 +86,7 @@ def renew_tor_ip(port):
         time.sleep(5)  # Wait for the new IP to be assigned
 
 # Function to scrape .onion address for the title
-def scrape_onion(url, depth, max_depth, visited, writer, text_widget, proxy):
+def scrape_onion(url, depth, max_depth, visited, text_widget, proxy):
     if depth > max_depth or stop_scraping_flag.is_set():
         return  # Stop recursion if max depth is reached or stop flag is set
 
@@ -107,10 +107,15 @@ def scrape_onion(url, depth, max_depth, visited, writer, text_widget, proxy):
             text_widget.yview(tk.END)  # Scroll to the bottom
             print(f"Scraped: Depth {depth} - {url} - Title: {title}")
 
+            # Write the result to the CSV file in real-time
+            with open('scraped_onions.csv', mode='a', newline='', encoding='utf-8') as file:
+                writer = csv.writer(file)
+                writer.writerow([url, title])
+
             for link in soup.find_all("a"):
                 href = link.get("href")
                 if href and href.startswith("http"):
-                    scrape_onion(href, depth + 1, max_depth, visited, writer, text_widget, proxy)
+                    scrape_onion(href, depth + 1, max_depth, visited, text_widget, proxy)
     except Exception as e:
         logging.error(f"Error scraping {url}: {e}")
         text_widget.insert(tk.END, f"Error scraping {url}: {e}\n")
@@ -142,26 +147,25 @@ def open_tor_proxy_settings():
 def start_scraping(onion_file, max_depth, text_widget):
     visited = set()  # To track visited URLs
 
-    # Open CSV file for writing the results
+    # Open CSV file for writing the header row
     with open('scraped_onions.csv', mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        # Write the header row in CSV
         writer.writerow(['.onion URL', 'Page Title'])
 
-        with open(onion_file, 'r') as file:
-            onion_addresses = [line.strip() for line in file.readlines()]
+    with open(onion_file, 'r') as file:
+        onion_addresses = [line.strip() for line in file.readlines()]
 
-        threads = []
-        for address in onion_addresses:
-            if stop_scraping_flag.is_set():
-                break
-            proxy = proxy_manager.get_next_proxy()
-            thread = threading.Thread(target=scrape_onion, args=(address, 1, max_depth, visited, writer, text_widget, proxy))
-            threads.append(thread)
-            thread.start()
+    threads = []
+    for address in onion_addresses:
+        if stop_scraping_flag.is_set():
+            break
+        proxy = proxy_manager.get_next_proxy()
+        thread = threading.Thread(target=scrape_onion, args=(address, 1, max_depth, visited, text_widget, proxy))
+        threads.append(thread)
+        thread.start()
 
-        for thread in threads:
-            thread.join()
+    for thread in threads:
+        thread.join()
 
     text_widget.insert(tk.END, "Scraping completed!\n")
     text_widget.yview(tk.END)  # Scroll to the bottom

@@ -1,21 +1,16 @@
 #!/bin/bash
 
+# Clone the repository and checkout the gui-multi-tor branch using SSH
+git clone git@github.com:BrianTheMint/tor_crawler.git -b gui-multi-tor
 
-# Clone the repository and checkout the gui-muli-tor branch
-git clone https://github.com/BrianTheMint/tor_scraper.git -b gui-multi-tor
-
-# Make the folder accessible to everyone
-chmod -R 777 /tor_scraper_gui_multi
-
-# Copy the tor_scraper folder to the new location
-cp -r /home/brian/tor_scraper /tor_scraper_gui_multi
+# Navigate to the cloned repository
+cd tor_crawler
 
 # Install necessary packages
 sudo apt-get update
-sudo apt-get install -y python3 python3-venv python3-pip python3-tk tor
+sudo apt-get install -y python3 python3-venv python3-pip
 
-# Set up a virtual environment in /tor_scraper_gui_multi/tor_scraper
-cd /tor_scraper_gui_multi
+# Set up a virtual environment in the cloned repository
 python3 -m venv venv
 
 # Activate the virtual environment and install requirements
