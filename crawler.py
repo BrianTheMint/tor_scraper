@@ -8,7 +8,6 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from urllib.parse import urljoin
 import csv
-import argparse
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import threading
@@ -60,8 +59,7 @@ start_tor_instances()
 proxy_manager = TorProxyManager(config["tor_proxies"])
 
 # Function to make a request using the next Tor proxy
-def make_request(url):
-    proxy = proxy_manager.get_next_proxy()
+def make_request(url, proxy):
     session = requests.Session()
     session.proxies = {"http": proxy, "https": proxy}
     retry = Retry(total=5, backoff_factor=1, status_forcelist=[502, 503, 504])
@@ -81,14 +79,14 @@ def save_max_depth(value):
     save_config(config)
 
 # Function to request a new Tor IP address
-def renew_tor_ip():
-    with Controller.from_port(port=9051) as controller:
+def renew_tor_ip(port):
+    with Controller.from_port(port=port) as controller:
         controller.authenticate()  # Authenticate with the Tor Controller
         controller.signal(Signal.NEWNYM)  # Request a new IP address
         time.sleep(5)  # Wait for the new IP to be assigned
 
 # Function to scrape .onion address for the title
-def scrape_onion(url, depth, max_depth, visited, writer, text_widget):
+def scrape_onion(url, depth, max_depth, visited, writer, text_widget, proxy):
     if depth > max_depth or stop_scraping_flag.is_set():
         return  # Stop recursion if max depth is reached or stop flag is set
 
@@ -99,7 +97,7 @@ def scrape_onion(url, depth, max_depth, visited, writer, text_widget):
     visited.add(url)  # Mark this URL as visited
 
     try:
-        response = make_request(url)
+        response = make_request(url, proxy)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             title = soup.title.string if soup.title else "No title"
@@ -112,7 +110,7 @@ def scrape_onion(url, depth, max_depth, visited, writer, text_widget):
             for link in soup.find_all("a"):
                 href = link.get("href")
                 if href and href.startswith("http"):
-                    scrape_onion(href, depth + 1, max_depth, visited, writer, text_widget)
+                    scrape_onion(href, depth + 1, max_depth, visited, writer, text_widget, proxy)
     except Exception as e:
         logging.error(f"Error scraping {url}: {e}")
         text_widget.insert(tk.END, f"Error scraping {url}: {e}\n")
@@ -140,22 +138,6 @@ def open_tor_proxy_settings():
     save_button = tk.Button(settings_window, text="Save", command=save_tor_proxy_settings)
     save_button.pack(pady=20)
 
-# Function to set up and start a single Tor instance
-def setup_single_tor_instance():
-    tor_data_dir = os.path.join(os.path.expanduser("~"), "tor_data")
-    os.makedirs(tor_data_dir, exist_ok=True)
-    tor_config_file = os.path.join(tor_data_dir, "torrc")
-
-    with open(tor_config_file, "w") as f:
-        f.write(f"""SocksPort 9050
-ControlPort 9051
-DataDirectory {tor_data_dir}
-Log notice file {tor_data_dir}/tor.log
-""")
-
-    subprocess.Popen(['tor', '-f', tor_config_file])
-    messagebox.showinfo("Tor Setup", "Single Tor instance has been set up and started.")
-
 # Function to handle the scraping process in a separate thread
 def start_scraping(onion_file, max_depth, text_widget):
     visited = set()  # To track visited URLs
@@ -169,13 +151,17 @@ def start_scraping(onion_file, max_depth, text_widget):
         with open(onion_file, 'r') as file:
             onion_addresses = [line.strip() for line in file.readlines()]
 
+        threads = []
         for address in onion_addresses:
             if stop_scraping_flag.is_set():
                 break
-            scrape_onion(address, 1, max_depth, visited, writer, text_widget)
+            proxy = proxy_manager.get_next_proxy()
+            thread = threading.Thread(target=scrape_onion, args=(address, 1, max_depth, visited, writer, text_widget, proxy))
+            threads.append(thread)
+            thread.start()
 
-            # Optionally, renew the Tor IP after each request to avoid being tracked
-            renew_tor_ip()
+        for thread in threads:
+            thread.join()
 
     text_widget.insert(tk.END, "Scraping completed!\n")
     text_widget.yview(tk.END)  # Scroll to the bottom
@@ -247,13 +233,6 @@ menu_bar.add_cascade(label="File", menu=file_menu)
 # Add a Quit option to the File menu
 file_menu.add_command(label="Quit", command=root.quit)
 
-# Create an Options menu and add it to the menu bar
-options_menu = tk.Menu(menu_bar, tearoff=0)
-menu_bar.add_cascade(label="Options", menu=options_menu)
-
-# Add a Tor Proxy Settings option to the Options menu
-options_menu.add_command(label="Tor Proxy Settings", command=open_tor_proxy_settings)
-
 # Initialize the Tkinter GUI variable with the value read from config.json (or default to 3)
 depth_var = tk.StringVar(value=str(load_max_depth()))
 
@@ -304,7 +283,7 @@ tor_control_frame = tk.Frame(root)
 tor_control_frame.pack(pady=10)
 
 # Setup Tor button
-setup_tor_button = tk.Button(tor_control_frame, text="Setup Tor Instance", command=setup_single_tor_instance)
+setup_tor_button = tk.Button(tor_control_frame, text="Setup Tor Instance", command=setup_multiple_tor)
 setup_tor_button.pack(side=tk.LEFT, padx=10)
 
 # Close Tor button centered
